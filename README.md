@@ -5,7 +5,8 @@ This project is a Flask-based web application leveraging AI. Follow the steps be
 ## Supported Files
 
 PDF
-Docx
+DOCX
+PPT
 
 ## Table of Contents
 

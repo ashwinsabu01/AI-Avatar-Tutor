@@ -27,7 +27,7 @@ app.config['AUDIO_FOLDER'] = AUDIO_FOLDER
 
 # Load environment variables
 load_dotenv()
-api_key = 'AIzaSyDb5kipWz4pZP4bPVkOTRj4KaXyMIy7erI'
+api_key = <api_key_here>
 
 if not api_key:
     raise ValueError("GOOGLE_API_KEY not found in environment variables")

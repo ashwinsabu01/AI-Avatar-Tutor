@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI File Processor & Interactive Quiz</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #121212;
+        color: #ffffff;
+      }
+      .container {
+        margin-top: 50px;
+      }
+      .form-label,
+      h3,
+      h5 {
+        color: #f8f9fa;
+      }
+      .spinner-border {
+        color: #f8f9fa;
+      }
+      .result-card {
+        background: #1f1f1f;
+        border: none;
+        border-radius: 10px;
+        padding: 20px;
+      }
+      audio {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="text-center">AI File Processor & Interactive Quiz</h1>
+      <form id="uploadForm">
+        <div class="mb-3">
+          <label for="file" class="form-label">Upload Your File</label>
+          <input
+            type="file"
+            class="form-control"
+            id="file"
+            name="file"
+            required
+          />
+        </div>
+        <button type="submit" class="btn btn-primary w-100">
+          Process File
+        </button>
+      </form>
+
+      <div id="spinner" class="text-center mt-4" style="display: none">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Processing...</span>
+        </div>
+        <p>Processing your file, please wait...</p>
+      </div>
+
+      <div id="results" class="mt-5" style="display: none">
+        <div class="card result-card">
+          <h3>Extracted Text</h3>
+          <pre class="text-white" id="extractedText"></pre>
+        </div>
+        <div class="card result-card mt-3">
+          <h3>AI Explanation</h3>
+          <pre class="text-white" id="explanationText"></pre>
+        </div>
+        <div class="card result-card mt-3">
+          <h3>Explanation Audio</h3>
+          <audio id="audioPlayer" controls></audio>
+        </div>
+        <div class="card result-card mt-3">
+          <h3>Interactive Quiz</h3>
+          <div id="quizContainer"></div>
+          <button
+            id="submitQuiz"
+            class="btn btn-success mt-3"
+            style="display: none"
+          >
+            Submit Quiz
+          </button>
+        </div>
+        <div
+          class="card result-card mt-3"
+          id="quizFeedback"
+          style="display: none"
+        >
+          <h3>Quiz Feedback</h3>
+          <h4 id="quizScore" class="text-white mt-3"></h4>
+          <div id="feedbackText" class="text-white"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("uploadForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const formData = new FormData();
+          formData.append("file", document.getElementById("file").files[0]);
+
+          // Show spinner
+          document.getElementById("spinner").style.display = "block";
+          document.getElementById("results").style.display = "none";
+
+          const response = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log(data);
+
+            // Hide spinner and display results
+            document.getElementById("spinner").style.display = "none";
+            document.getElementById("results").style.display = "block";
+
+            document.getElementById("extractedText").textContent =
+              data.extracted_text;
+            document.getElementById("explanationText").textContent =
+              data.explanation;
+            document.getElementById("audioPlayer").src = data.audio_file;
+
+            // Parse quiz data and generate quiz
+            const quizDataString = data.quiz
+              .replace(/```json|```JSON|```/gi, "")
+              .trim();
+            const quizData = JSON.parse(quizDataString);
+
+            console.log(quizData);
+
+            const quizContainer = document.getElementById("quizContainer");
+            quizContainer.innerHTML = ""; // Clear any existing quiz
+
+            quizData.forEach((q, index) => {
+              const questionDiv = document.createElement("div");
+              questionDiv.className = "mb-3";
+              questionDiv.innerHTML = `
+                <h5>Q${index + 1}: ${q.question}</h5>
+                ${q.option
+                  .map(
+                    (opt, optIndex) => `
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      name="question${index}"
+                      id="question${index}_option${optIndex}"
+                      value="${opt}"
+                    />
+                    <label
+                      class="form-check-label text-white"
+                      for="question${index}_option${optIndex}"
+                    >
+                      ${opt}
+                    </label>
+                  </div>
+                `
+                  )
+                  .join("")}
+              `;
+              quizContainer.appendChild(questionDiv);
+            });
+
+            // Show the quiz submission button
+            document.getElementById("submitQuiz").style.display = "block";
+
+            // Handle quiz submission and feedback
+            document
+              .getElementById("submitQuiz")
+              .addEventListener("click", async () => {
+                const answers = {};
+                quizData.forEach((_, index) => {
+                  console.log(index);
+                  const selectedOption = document.querySelector(
+                    `input[name="question${index}"]:checked`
+                  );
+                  answers[`question${index}`] = selectedOption
+                    ? selectedOption.value
+                    : null;
+                });
+
+                // Validate answers against correct ones
+                const feedback = quizData.map((q, index) => {
+                  const userAnswer = answers[`question${index}`];
+                  const isCorrect = userAnswer === q.answer;
+                  return {
+                    question: q.question,
+                    userAnswer,
+                    correctAnswer: q.answer,
+                    explanation: q.explanation,
+                    isCorrect,
+                  };
+                });
+
+                const correctAnswers = feedback.filter(
+                  (f) => f.isCorrect
+                ).length;
+                const score = `Your Score: ${correctAnswers} / ${quizData.length}`;
+                document.getElementById("quizScore").textContent = score;
+
+                // Display feedback
+                const feedbackText = feedback
+                  .map(
+                    (f, index) => `
+                    <h5>Q${index + 1}: ${f.question}</h5>
+                    <p>Your Answer: <b>${f.userAnswer || "No Answer"}</b></p>
+                    <p>Correct Answer: <b>${f.correctAnswer}</b></p>
+                    <p>${f.isCorrect ? "✅ Correct!" : "❌ Incorrect."}</p>
+                    <p>Explanation: ${f.explanation}</p>
+                    <hr />
+                  `
+                  )
+                  .join("");
+
+                document.getElementById("quizFeedback").style.display = "block";
+                document.getElementById("feedbackText").innerHTML =
+                  feedbackText;
+              });
+          } else {
+            alert("Error processing file.");
+            document.getElementById("spinner").style.display = "none";
+          }
+        });
+    </script>
+  </body>
+</html>

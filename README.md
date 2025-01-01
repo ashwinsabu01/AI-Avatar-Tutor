@@ -144,7 +144,3 @@ update the .env file with your Gemini API key.
 ---
 
 4. Install tesseract-ocr (pdf conversion)
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).

@@ -1,234 +1,403 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI File Processor & Interactive Quiz</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Document Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-      body {
-        background-color: #121212;
-        color: #ffffff;
-      }
-      .container {
-        margin-top: 50px;
-      }
-      .form-label,
-      h3,
-      h5 {
-        color: #f8f9fa;
-      }
-      .spinner-border {
-        color: #f8f9fa;
-      }
-      .result-card {
-        background: #1f1f1f;
-        border: none;
-        border-radius: 10px;
-        padding: 20px;
-      }
-      audio {
-        width: 100%;
-      }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            min-height: 100vh;
+            padding-bottom: 20px;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            background-color: #1f1f1f;
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #1f1f1f;
+            border-bottom: none;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .form-control, .form-select {
+            background-color: #2d2d2d;
+            border: 1px solid #444;
+            color: #ffffff;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        #upload-status {
+            display: none;
+            margin-top: 10px;
+        }
+        #loading-spinner {
+            display: none;
+        }
+        #result-container {
+            display: none;
+        }
+        .nav-tabs {
+            border-bottom: 1px solid #444;
+        }
+        .nav-tabs .nav-link {
+            color: #adb5bd;
+            border: none;
+        }
+        .nav-tabs .nav-link:hover {
+            border-color: transparent;
+            color: #ffffff;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: transparent;
+            border-bottom: 2px solid #0d6efd;
+            color: #ffffff;
+        }
+        .tab-content {
+            padding: 20px 0;
+        }
+        pre {
+            background-color: #2d2d2d;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .explanation-text {
+            line-height: 1.6;
+        }
+        .quiz-container {
+            margin-top: 15px;
+        }
+        .quiz-question {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .quiz-options {
+            margin-top: 10px;
+        }
+        .option-label {
+            display: block;
+            padding: 8px 15px;
+            margin-bottom: 8px;
+            background-color: #383838;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .option-label:hover {
+            background-color: #444;
+        }
+        .option-label.selected {
+            background-color: #0d6efd;
+        }
+        .option-label.correct {
+            background-color: #198754;
+        }
+        .option-label.incorrect {
+            background-color: #dc3545;
+        }
+        .quiz-feedback {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .btn-group {
+            margin-top: 15px;
+        }
+        .avatar-button {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .avatar-img {
+            width: 30px;
+            height: 30px;
+        }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            min-height: 100vh;
+            padding-bottom: 20px;
+        }
+
+        .form-control, .form-select, .form-control::placeholder, .form-select::placeholder {
+            color: #ffffff;
+        }
+
+        a, a:hover, a:focus, a:visited {
+            color: #ffffff;
+        }
+
+        .btn {
+            color: #ffffff;
+        }
+
+        .text-dark, .text-black, .text-body {
+            color: #ffffff !important;
+        }
+
+        pre, code {
+            color: #ffffff;
+        }
+
+        .option-label {
+            color: #ffffff;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #ffffff;
+        }
+
+        .alert {
+            color: #ffffff;
+            background-color: #dc3545;
+        }
+        
+        .alert.alert-info {
+            background-color: #0d6efd;
+        }
+
+        .alert.alert-info.mt-3 {
+            background-color: #0d6efd;
+        }
+
+        .quiz-feedback.alert-success {
+            background-color: #d4edda; 
+            border: 1px solid #c3e6cb; 
+            color: #155724;            
+        }
+
+        .card-title, .card-text, h1, h2, h3, h4, h5, h6, p, span, div {
+            color: #ffffff;
+        }
+
+        .quiz-question .badge {
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+        }
+
+        .form-control.is-valid {
+            background-color: rgba(25, 135, 84, 0.1);
+            border-color: #198754;
+        }
+
+        .form-control.is-invalid {
+            background-color: rgba(220, 53, 69, 0.1);
+            border-color: #dc3545;
+        }
+
+        .spinner-border.text-primary {
+            color: #0d6efd !important;
+        }
+
+        .badge.bg-success {
+            background-color: #198754 !important;
+        }
+
+        .badge.bg-warning {
+            background-color: #ffc107 !important;
+            color: #212529 !important;
+        }
+
+        .badge.bg-danger {
+            background-color: #dc3545 !important;
+        }
+
+        .badge.bg-info {
+            background-color: #0dcaf0 !important;
+            color: #212529 !important;
+        }
+
+        .badge.bg-primary {
+            background-color: #0d6efd !important;
+        }
+
+        .badge.bg-secondary {
+            background-color: #6c757d !important;
+        }
+
+        .quiz-feedback.alert-success {
+            background-color: rgba(25, 135, 84, 0.2);
+            border-color: rgba(25, 135, 84, 0.3);
+            color: #75b798;
+        }
+
+        .quiz-feedback.alert-danger {
+            background-color: rgba(220, 53, 69, 0.2);
+            border-color: rgba(220, 53, 69, 0.3);
+            color: #ea868f;
+        }
+
+        .quiz-feedback.alert-warning {
+            background-color: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.3);
+            color: #ffda6a;
+        }
+
+        #quiz-options-card {
+            background-color: #1f1f1f;
+            border: none;
+        }
+
+        .form-control, .form-select {
+            background-color: #2d2d2d;
+            border: 1px solid #444;
+            color: #ffffff;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        .input-group .form-control {
+            background-color: #2d2d2d;
+            border: 1px solid #444;
+            color: #ffffff;
+        }
+
+        .input-group .form-control:focus {
+            background-color: #2d2d2d;
+        }
     </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1 class="text-center">AI File Processor & Interactive Quiz</h1>
-      <form id="uploadForm">
-        <div class="mb-3">
-          <label for="file" class="form-label">Upload Your File</label>
-          <input
-            type="file"
-            class="form-control"
-            id="file"
-            name="file"
-            required
-          />
-        </div>
-        <button type="submit" class="btn btn-primary w-100">
-          Process File
-        </button>
-      </form>
+</head>
+<body>
+    <div class="container py-4">
+        <h1 class="text-center mb-4">AI Avatar Teacher</h1>
 
-      <div id="spinner" class="text-center mt-4" style="display: none">
-        <div class="spinner-border" role="status">
-          <span class="visually-hidden">Processing...</span>
+        <div class="card" id="upload-card">
+            <div class="card-header">
+                <h5 class="mb-0">Upload Document</h5>
+            </div>
+            <div class="card-body">
+                <form id="upload-form">
+                    <div class="mb-3">
+                        <label for="file-upload" class="form-label">Choose a file (PDF, DOCX, PPTX, or Image)</label>
+                        <input class="form-control" type="file" id="file-upload" accept=".pdf,.docx,.pptx,.jpg,.jpeg,.png,.bmp,.tiff">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="upload-button">
+                        <span id="loading-spinner" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Analyze Document
+                    </button>
+                </form>
+                <div class="alert alert-info" id="upload-status"></div>
+            </div>
         </div>
-        <p>Processing your file, please wait...</p>
-      </div>
 
-      <div id="results" class="mt-5" style="display: none">
-        <div class="card result-card">
-          <h3>Extracted Text</h3>
-          <pre class="text-white" id="extractedText"></pre>
+        <div id="result-container">
+            <ul class="nav nav-tabs" id="resultTabs">
+                <li class="nav-item">
+                    <a class="nav-link active" id="explanation-tab" data-bs-toggle="tab" href="#explanation">Explanation</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="raw-tab" data-bs-toggle="tab" href="#raw">Raw Text</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="quiz-tab" data-bs-toggle="tab" href="#quiz">Quiz</a>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="explanation">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Document Summary</h5>
+                            <p class="explanation-text" id="explanation-text"></p>
+                            <audio id="explanation-audio" controls class="w-100 mt-3"></audio>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="raw">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Extracted Text</h5>
+                            <pre id="raw-text" class="mt-3"></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="quiz">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Test Your Knowledge</h5>
+                            <div class="card mb-3" id="quiz-options-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Quiz Options</h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label for="difficulty" class="form-label">Difficulty</label>
+                                            <select class="form-select" id="difficulty">
+                                                <option value="mixed" selected>Mixed (All Levels)</option>
+                                                <option value="easy">Easy</option>
+                                                <option value="medium">Medium</option>
+                                                <option value="hard">Hard</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="taxonomy" class="form-label">Bloom's Taxonomy</label>
+                                            <select class="form-select" id="taxonomy">
+                                                <option value="mixed" selected>Mixed (All Levels)</option>
+                                                <option value="knowledge">Knowledge (Remember)</option>
+                                                <option value="comprehension">Comprehension (Understand)</option>
+                                                <option value="application">Application (Apply)</option>
+                                                <option value="analysis">Analysis (Analyze)</option>
+                                                <option value="evaluation">Evaluation (Evaluate)</option>
+                                                <option value="creation">Creation (Create)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="format" class="form-label">Question Format</label>
+                                            <select class="form-select" id="format">
+                                                <option value="mixed" selected>Mixed Formats</option>
+                                                <option value="mcq">Multiple Choice Only</option>
+                                                <option value="true_false">True/False Only</option>
+                                                <option value="short_answer">Short Answer Only</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="quiz-container" class="quiz-container"></div>
+                            <div class="d-flex justify-content-center my-3">
+                                <div class="spinner-border text-primary d-none" role="status" id="quiz-loading">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                            <div class="btn-group">
+                                <button id="check-answers" class="btn btn-primary">Check Answers</button>
+                                <button id="new-questions" class="btn btn-secondary">New Questions</button>
+                                <button id="download-quiz" class="btn btn-success">Download Quiz</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="avatar-button">
+                <a href="/avatar" class="btn btn-info btn-lg">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" alt="Avatar" class="avatar-img">
+                    Chat with Avatar Assistant
+                </a>
+            </div>
         </div>
-        <div class="card result-card mt-3">
-          <h3>AI Explanation</h3>
-          <pre class="text-white" id="explanationText"></pre>
-        </div>
-        <div class="card result-card mt-3">
-          <h3>Explanation Audio</h3>
-          <audio id="audioPlayer" controls></audio>
-        </div>
-        <div class="card result-card mt-3">
-          <h3>Interactive Quiz</h3>
-          <div id="quizContainer"></div>
-          <button
-            id="submitQuiz"
-            class="btn btn-success mt-3"
-            style="display: none"
-          >
-            Submit Quiz
-          </button>
-        </div>
-        <div
-          class="card result-card mt-3"
-          id="quizFeedback"
-          style="display: none"
-        >
-          <h3>Quiz Feedback</h3>
-          <h4 id="quizScore" class="text-white mt-3"></h4>
-          <div id="feedbackText" class="text-white"></div>
-        </div>
-      </div>
     </div>
 
-    <script>
-      document
-        .getElementById("uploadForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const formData = new FormData();
-          formData.append("file", document.getElementById("file").files[0]);
-
-          // Show spinner
-          document.getElementById("spinner").style.display = "block";
-          document.getElementById("results").style.display = "none";
-
-          const response = await fetch("/upload", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            console.log(data);
-
-            // Hide spinner and display results
-            document.getElementById("spinner").style.display = "none";
-            document.getElementById("results").style.display = "block";
-
-            document.getElementById("extractedText").textContent =
-              data.extracted_text;
-            document.getElementById("explanationText").textContent =
-              data.explanation;
-            document.getElementById("audioPlayer").src = data.audio_file;
-
-            // Parse quiz data and generate quiz
-            const quizDataString = data.quiz
-              .replace(/```json|```JSON|```/gi, "")
-              .trim();
-            const quizData = JSON.parse(quizDataString);
-
-            console.log(quizData);
-
-            const quizContainer = document.getElementById("quizContainer");
-            quizContainer.innerHTML = ""; // Clear any existing quiz
-
-            quizData.forEach((q, index) => {
-              const questionDiv = document.createElement("div");
-              questionDiv.className = "mb-3";
-              questionDiv.innerHTML = `
-                <h5>Q${index + 1}: ${q.question}</h5>
-                ${q.option
-                  .map(
-                    (opt, optIndex) => `
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      name="question${index}"
-                      id="question${index}_option${optIndex}"
-                      value="${opt}"
-                    />
-                    <label
-                      class="form-check-label text-white"
-                      for="question${index}_option${optIndex}"
-                    >
-                      ${opt}
-                    </label>
-                  </div>
-                `
-                  )
-                  .join("")}
-              `;
-              quizContainer.appendChild(questionDiv);
-            });
-
-            // Show the quiz submission button
-            document.getElementById("submitQuiz").style.display = "block";
-
-            // Handle quiz submission and feedback
-            document
-              .getElementById("submitQuiz")
-              .addEventListener("click", async () => {
-                const answers = {};
-                quizData.forEach((_, index) => {
-                  console.log(index);
-                  const selectedOption = document.querySelector(
-                    `input[name="question${index}"]:checked`
-                  );
-                  answers[`question${index}`] = selectedOption
-                    ? selectedOption.value
-                    : null;
-                });
-
-                // Validate answers against correct ones
-                const feedback = quizData.map((q, index) => {
-                  const userAnswer = answers[`question${index}`];
-                  const isCorrect = userAnswer === q.answer;
-                  return {
-                    question: q.question,
-                    userAnswer,
-                    correctAnswer: q.answer,
-                    explanation: q.explanation,
-                    isCorrect,
-                  };
-                });
-
-                const correctAnswers = feedback.filter(
-                  (f) => f.isCorrect
-                ).length;
-                const score = `Your Score: ${correctAnswers} / ${quizData.length}`;
-                document.getElementById("quizScore").textContent = score;
-
-                // Display feedback
-                const feedbackText = feedback
-                  .map(
-                    (f, index) => `
-                    <h5>Q${index + 1}: ${f.question}</h5>
-                    <p>Your Answer: <b>${f.userAnswer || "No Answer"}</b></p>
-                    <p>Correct Answer: <b>${f.correctAnswer}</b></p>
-                    <p>${f.isCorrect ? "✅ Correct!" : "❌ Incorrect."}</p>
-                    <p>Explanation: ${f.explanation}</p>
-                    <hr />
-                  `
-                  )
-                  .join("");
-
-                document.getElementById("quizFeedback").style.display = "block";
-                document.getElementById("feedbackText").innerHTML =
-                  feedbackText;
-              });
-          } else {
-            alert("Error processing file.");
-            document.getElementById("spinner").style.display = "none";
-          }
-        });
-    </script>
-  </body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/index.js"></script>
+</body>
 </html>

@@ -139,44 +139,37 @@
             overflow: hidden;
         }
 
-        /* Ensure input text and placeholder are white */
         #text-input, #text-input::placeholder {
             color: #ffffff;
         }
 
-        /* Make all buttons have white text */
         .btn {
             color: #ffffff;
         }
 
-        /* Ensure any links have white text */
         a, a:hover, a:focus, a:visited {
             color: #ffffff;
         }
 
-        /* Ensure all message content has white text */
         .message-content {
             color: #ffffff;
         }
 
-        /* Override any Bootstrap text classes */
         .text-dark, .text-black, .text-body {
             color: #ffffff !important;
         }
 
-        /* Ensure loading text is white */
         #avatar-loading {
             color: #ffffff;
         }
 
-        /* Make sure all headings and text elements are white */
         h1, h2, h3, h4, h5, h6, p, span, div {
             color: #ffffff;
         }
 
         #avatar-container {
         width: 100%;
-        height: 400px; /* Increased height for larger avatar */
+        height: 400px; 
         position: relative;
         overflow: hidden;
         border-radius: 8px;
@@ -184,14 +177,12 @@
         margin-bottom: 20px;
     }
     
-    /* Ensure the avatar container has a minimum height on smaller screens */
     @media (max-width: 768px) {
         #avatar-container {
             height: 350px;
         }
     }
     
-    /* Improve loading indicator styling */
     #avatar-loading {
         position: absolute;
         top: 50%;
@@ -204,7 +195,6 @@
         z-index: 10;
     }
     
-    /* Add a subtle glow effect to the avatar container */
     .avatar-glow {
         position: absolute;
         bottom: -50px;
@@ -229,7 +219,7 @@
                 Back to Main Page
             </a>
             <h2>AI Avatar Chat</h2>
-            <div></div> <!-- Empty div for flex spacing -->
+            <div></div> 
         </div>
         
         <div id="avatar-container">
@@ -247,7 +237,6 @@
         </div>
     </div>
 
-    <!-- Import maps for modules -->
     <script type="importmap">
         {
             "imports": {
@@ -261,7 +250,6 @@
         }
     </script>
     
-    <!-- Main script for avatar functionality -->
     <script type="module" src="/static/js/avatar.js"></script>
 </body>
 </html>

@@ -61,7 +61,7 @@ PPT
 
 ---
 
-### Windows
+### Windows 
 
 1. **Install Python**: Download and install Python from the [official Python website](https://www.python.org/downloads/). Ensure `pip` is included in the installation.
 
@@ -83,7 +83,7 @@ PPT
    ```powershell
    pip install -r requirements.txt
    ```
-
+(optional: use WSL terminal and run ubuntu commands for better results)
 ---
 
 ### macOS
@@ -117,7 +117,7 @@ PPT
 
 ## Update env file
 
-update the .env file with your Gemini API key.
+update the .env file with your Gemini API key. Also update the avatar.js with you Google TTS key.
 
 ## Running the Application
 

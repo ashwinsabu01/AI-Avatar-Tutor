@@ -1,5 +1,3 @@
-// index.js - Main page script for document handling
-
 document.addEventListener('DOMContentLoaded', function() {
     const uploadForm = document.getElementById('upload-form');
     const fileUpload = document.getElementById('file-upload');
@@ -15,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const newQuestionsBtn = document.getElementById('new-questions');
     const quizLoadingSpinner = document.getElementById('quiz-loading');
 
-    // Quiz options selectors
     const difficultySelect = document.getElementById('difficulty');
     const taxonomySelect = document.getElementById('taxonomy');
     const formatSelect = document.getElementById('format');
@@ -24,10 +21,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let extractedText = '';
     let quizAnswers = [];
     
-    // Check if we have data in session (returning from avatar page)
     checkSessionData();
     
-    // Handle form submission
     uploadForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -64,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Function to check the session data when returning from avatar page
     function checkSessionData() {
         fetch('/get_session_data')
             .then(response => response.json())
@@ -78,7 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    // Function to handle loading state
     function startLoading() {
         uploadButton.disabled = true;
         loadingSpinner.style.display = 'inline-block';
@@ -96,30 +89,23 @@ document.addEventListener('DOMContentLoaded', function() {
             : uploadButton.textContent = 'Analyze Document';
     }
     
-    // Show upload status message
     function showUploadStatus(message, className) {
         uploadStatus.textContent = message;
         uploadStatus.className = `alert ${className}`;
         uploadStatus.style.display = 'block';
     }
     
-    // Display results from the API
     function displayResults(data) {
-        // Store the extracted text for quiz generation
         extractedText = data.extracted_text;
         
-        // Display the explanation
         explanationText.textContent = data.explanation;
         
-        // Set the audio file
         if (data.audio_file) {
             explanationAudio.src = data.audio_file;
         }
         
-        // Display the raw text
         rawText.textContent = data.extracted_text;
         
-        // Generate quiz
         try {
             currentQuiz = JSON.parse(data.quiz);
             generateQuizUI(currentQuiz);
@@ -128,14 +114,11 @@ document.addEventListener('DOMContentLoaded', function() {
             quizContainer.innerHTML = '<div class="alert alert-warning">Unable to generate quiz for this document.</div>';
         }
         
-        // Show the result container
         resultContainer.style.display = 'block';
         
-        // Scroll to results
         resultContainer.scrollIntoView({ behavior: 'smooth' });
     }
     
-    // Generate quiz UI from quiz data
     function generateQuizUI(quizData) {
         quizContainer.innerHTML = '';
         quizAnswers = [];
@@ -144,7 +127,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const questionEl = document.createElement('div');
             questionEl.className = 'quiz-question';
             
-            // Create badges for difficulty, taxonomy level, and format if they exist
             let badgesHTML = '';
             if (question.difficulty) {
                 const badgeClass = getBadgeClass(question.difficulty);
@@ -159,7 +141,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 badgesHTML += `<span class="badge bg-primary me-2">${question.format}</span>`;
             }
             
-            // Add badges to the question header if any exist
             const badgesDiv = badgesHTML ? `<div class="mb-2">${badgesHTML}</div>` : '';
             
             questionEl.innerHTML = `
@@ -173,16 +154,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const optionsContainer = document.getElementById(`options-${index}`);
             
-            // Determine the question format
             const format = question.format || 'mcq';
             
             if (format === 'true_false') {
-                // True/False questions
                 ['True', 'False'].forEach((option, optIndex) => {
                     createOptionElement(optionsContainer, option, index, optIndex);
                 });
             } else if (format === 'short_answer') {
-                // Short answer questions
                 const inputGroup = document.createElement('div');
                 inputGroup.className = 'input-group mb-3';
                 
@@ -199,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 inputGroup.appendChild(input);
                 optionsContainer.appendChild(inputGroup);
             } else {
-                // Multiple choice questions
                 question.option.forEach((option, optIndex) => {
                     createOptionElement(optionsContainer, option, index, optIndex);
                 });
@@ -207,7 +184,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Helper function to create option elements
     function createOptionElement(container, option, questionIndex, optionIndex) {
         const optionLabel = document.createElement('label');
         optionLabel.className = 'option-label';
@@ -217,21 +193,17 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         
         optionLabel.addEventListener('click', function() {
-            // Remove selected class from all options in this question
             const options = container.querySelectorAll('.option-label');
             options.forEach(opt => opt.classList.remove('selected'));
             
-            // Add selected class to this option
             this.classList.add('selected');
             
-            // Store the answer
             quizAnswers[questionIndex] = option;
         });
         
         container.appendChild(optionLabel);
     }
     
-    // Helper function to get badge class based on difficulty
     function getBadgeClass(difficulty) {
         switch(difficulty.toLowerCase()) {
             case 'easy':
@@ -245,7 +217,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Check answers button handler
     checkAnswersBtn.addEventListener('click', function() {
         let score = 0;
         
@@ -254,71 +225,58 @@ document.addEventListener('DOMContentLoaded', function() {
             const format = question.format || 'mcq';
             let selectedOption = quizAnswers[index];
             
-            // For short answer questions
             if (format === 'short_answer') {
                 const inputEl = document.getElementById(`short-answer-${index}`);
                 selectedOption = inputEl ? inputEl.value.trim() : '';
                 
-                // Check if answer is correct (case-insensitive)
                 const acceptableAnswers = Array.isArray(question.option) ? question.option : [];
                 const isCorrect = acceptableAnswers.some(answer => 
                     selectedOption.toLowerCase() === answer.toLowerCase());
                 
                 if (selectedOption) {
                     if (isCorrect) {
-                        // Correct answer
                         score++;
                         feedbackEl.textContent = `Correct! ${question.explanation}`;
                         feedbackEl.className = 'quiz-feedback alert alert-success';
                         inputEl.classList.add('is-valid');
                         inputEl.classList.remove('is-invalid');
                     } else {
-                        // Incorrect answer
                         feedbackEl.textContent = `Incorrect. Acceptable answers: "${question.option.join('" or "')}". ${question.explanation}`;
                         feedbackEl.className = 'quiz-feedback alert alert-danger';
                         inputEl.classList.add('is-invalid');
                         inputEl.classList.remove('is-valid');
                     }
                 } else {
-                    // No answer
                     feedbackEl.textContent = `You didn't answer this question. Acceptable answers: "${question.option.join('" or "')}".`;
                     feedbackEl.className = 'quiz-feedback alert alert-warning';
                 }
                 
                 feedbackEl.style.display = 'block';
-                // Remove this continue statement as it's trying to jump across function boundaries
-                // continue;
             } else {
-                // For MCQ and True/False questions
                 const optionsContainer = document.getElementById(`options-${index}`);
                 const options = optionsContainer.querySelectorAll('.option-label');
                 
-                // Reset classes
                 options.forEach(opt => {
                     opt.classList.remove('correct', 'incorrect');
                 });
                 
                 if (selectedOption) {
                     if (selectedOption === question.answer) {
-                        // Correct answer
                         score++;
                         feedbackEl.textContent = `Correct! ${question.explanation}`;
                         feedbackEl.className = 'quiz-feedback alert alert-success';
                         feedbackEl.style.display = 'block';
                         
-                        // Highlight correct answer
                         options.forEach(opt => {
                             if (opt.textContent.trim().includes(selectedOption)) {
                                 opt.classList.add('correct');
                             }
                         });
                     } else {
-                        // Incorrect answer
                         feedbackEl.textContent = `Incorrect. The correct answer is "${question.answer}". ${question.explanation}`;
                         feedbackEl.className = 'quiz-feedback alert alert-danger';
                         feedbackEl.style.display = 'block';
                         
-                        // Highlight incorrect and correct answers
                         options.forEach(opt => {
                             if (opt.textContent.trim().includes(selectedOption)) {
                                 opt.classList.add('incorrect');
@@ -328,12 +286,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                 } else {
-                    // No answer selected
                     feedbackEl.textContent = `You didn't answer this question. The correct answer is "${question.answer}".`;
                     feedbackEl.className = 'quiz-feedback alert alert-warning';
                     feedbackEl.style.display = 'block';
                     
-                    // Highlight correct answer
                     options.forEach(opt => {
                         if (opt.textContent.trim().includes(question.answer)) {
                             opt.classList.add('correct');
@@ -343,31 +299,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Show overall score
         const scoreAlert = document.createElement('div');
         scoreAlert.className = 'alert alert-info mt-3';
         scoreAlert.textContent = `Your score: ${score} out of ${currentQuiz.length}`;
         quizContainer.prepend(scoreAlert);
         
-        // Disable check button after submission
         this.disabled = true;
     });
     
-    // Generate new questions button handler
     newQuestionsBtn.addEventListener('click', function() {
         if (!extractedText) {
             return;
         }
         
-        // Get quiz options
         const difficulty = difficultySelect.value;
         const taxonomy = taxonomySelect.value;
         const format = formatSelect.value;
         
-        // Get previous questions to avoid duplicates
         const previousQuestions = currentQuiz.map(q => q.question);
         
-        // Show loading spinner
         quizLoadingSpinner.classList.remove('d-none');
         
         fetch('/generate_quiz', {
@@ -385,7 +335,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            // Hide loading spinner
             quizLoadingSpinner.classList.add('d-none');
             
             if (data.error) {
@@ -397,16 +346,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentQuiz = newQuiz;
                 generateQuizUI(currentQuiz);
                 
-                // Enable check button again
                 checkAnswersBtn.disabled = false;
                 
-                // Remove any existing score alert
                 const oldScoreAlert = quizContainer.querySelector('.alert.alert-info.mt-3');
                 if (oldScoreAlert) {
                     oldScoreAlert.remove();
                 }
                 
-                // Scroll to quiz
                 document.getElementById('quiz-tab').click();
                 quizContainer.scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
@@ -415,14 +361,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            // Hide loading spinner
             quizLoadingSpinner.classList.add('d-none');
             console.error('Error generating new quiz:', error);
             alert(error.message);
         });
     });
 
-    // Download quiz functionality
     document.getElementById('download-quiz').addEventListener('click', function() {
         if (!currentQuiz.length) {
             alert("No quiz available to download.");

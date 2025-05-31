@@ -1,4 +1,3 @@
-# avatar_flask_routes.py - Flask routes for the avatar integration
 import os
 import uuid
 import tempfile
@@ -10,63 +9,46 @@ import numpy as np
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
 
-# Import functions from the shared utilities file
 from document_utils import get_document_data
 
 def register_avatar_routes(app):
-    # Ensure directories exist
     UPLOADS_DIR = os.path.join(app.static_folder, 'uploads')
     os.makedirs(UPLOADS_DIR, exist_ok=True)
     
-    # Initialize sentence transformer model for semantic similarity
     sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
     
-    # Store conversation history
     conversation_history = {}
     
-    # Enhanced helper function for speech recognition with audio format conversion
     def transcribe_audio(audio_file_path):
         recognizer = sr.Recognizer()
         
         try:
-            # First, try to convert the audio to WAV format using pydub
             print(f"[DEBUG] Processing audio file: {audio_file_path}")
             
-            # Load audio file with pydub (supports many formats)
             audio = AudioSegment.from_file(audio_file_path)
             
-            # Convert to mono and set sample rate to 16kHz (optimal for speech recognition)
             audio = audio.set_channels(1).set_frame_rate(16000)
             
-            # Normalize audio levels
             audio = audio.normalize()
             
-            # Remove silence from beginning and end
             audio = audio.strip_silence()
             
-            # Create a temporary WAV file
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_wav:
                 temp_wav_path = temp_wav.name
                 
-            # Export as WAV
             audio.export(temp_wav_path, format="wav")
             
-            # Now use speech recognition on the converted file
             with sr.AudioFile(temp_wav_path) as source:
-                # Adjust for ambient noise
                 recognizer.adjust_for_ambient_noise(source, duration=0.5)
                 
-                # Record the audio
                 audio_data = recognizer.record(source)
                 
                 try:
-                    # Try Google Speech Recognition first
                     text = recognizer.recognize_google(audio_data)
                     print(f"[DEBUG] Successfully transcribed: {text}")
                     return text
                     
                 except sr.UnknownValueError:
-                    # If Google fails, try with Sphinx (offline)
                     try:
                         text = recognizer.recognize_sphinx(audio_data)
                         print(f"[DEBUG] Sphinx transcription: {text}")
@@ -78,7 +60,6 @@ def register_avatar_routes(app):
                         
                 except sr.RequestError as e:
                     print(f"[DEBUG] Google Speech Recognition error: {e}")
-                    # Fallback to Sphinx
                     try:
                         text = recognizer.recognize_sphinx(audio_data)
                         print(f"[DEBUG] Sphinx fallback transcription: {text}")
@@ -89,7 +70,6 @@ def register_avatar_routes(app):
         except Exception as e:
             print(f"[DEBUG] Audio processing error: {str(e)}")
             
-            # Fallback: try direct speech recognition without conversion
             try:
                 with sr.AudioFile(audio_file_path) as source:
                     recognizer.adjust_for_ambient_noise(source, duration=0.5)
@@ -110,28 +90,23 @@ def register_avatar_routes(app):
                 return f"Sorry, I couldn't process your audio file. Please ensure it's a valid audio format."
         
         finally:
-            # Clean up temporary files
             try:
                 if 'temp_wav_path' in locals() and os.path.exists(temp_wav_path):
                     os.unlink(temp_wav_path)
             except:
                 pass
     
-    # Initialize Gemini model with more conversational prompting
     def init_gemini(api_key):
         genai.configure(api_key=api_key)
         return genai.GenerativeModel('models/gemini-2.0-flash')
     
-    # Get response from Gemini AI with document context and conversation history
     def get_gemini_response(prompt, document_content=None, user_id=None):
         try:
             model = init_gemini(app.config['GOOGLE_API_KEY'])
             
-            # Get or initialize conversation history for this user
             if user_id not in conversation_history:
                 conversation_history[user_id] = []
             
-            # Create history context from past exchanges (limit to last 5)
             history_context = ""
             if conversation_history[user_id]:
                 history_context = "Our recent conversation:\n"
@@ -140,7 +115,6 @@ def register_avatar_routes(app):
                     history_context += f"Assistant: {exchange['assistant']}\n"
             
             if document_content and document_content.strip():
-                # Create a context-aware system prompt for the model with conversational tone
                 context_prompt = f"""
                 Document Content: {document_content}
                 
@@ -158,7 +132,6 @@ def register_avatar_routes(app):
                 """
                 response = model.generate_content(context_prompt)
             else:
-                # Fallback with conversational tone if no document content
                 standard_prompt = f"""
                 {history_context}
                 
@@ -171,14 +144,12 @@ def register_avatar_routes(app):
                 """
                 response = model.generate_content(standard_prompt)
             
-            # Store this exchange in history
             if user_id:
                 conversation_history[user_id].append({
                     'user': prompt,
                     'assistant': response.text
                 })
                 
-                # Keep history at reasonable size
                 if len(conversation_history[user_id]) > 20:
                     conversation_history[user_id] = conversation_history[user_id][-20:]
                 
@@ -187,24 +158,19 @@ def register_avatar_routes(app):
             print(f"Error getting Gemini response: {str(e)}")
             return "I'm sorry, I couldn't process your request right now."
 
-    # Route to serve the avatar page
     @app.route('/avatar')
     def avatar_page():
-        # Store a flag indicating that we're going to the avatar page
         session['visited_avatar'] = True
         return app.send_static_file('avatar.html')
     
-    # Route to get document context for avatar
     @app.route('/avatar/context', methods=['GET'])
     def get_avatar_context():
-        # Check if user has a user_id and document
         if 'user_id' not in session or not session.get('has_document', False):
             return jsonify({
                 'extracted_content': '',
                 'explanation': ''
             })
         
-        # Get document data from file storage using the imported function
         doc_data = get_document_data(session['user_id'])
         
         return jsonify({
@@ -212,7 +178,6 @@ def register_avatar_routes(app):
             'explanation': doc_data.get('explanation', '')
         })
     
-    # Route to handle avatar chat interactions
     @app.route('/avatar/chat', methods=['POST'])
     def avatar_chat():
         try:
@@ -227,11 +192,9 @@ def register_avatar_routes(app):
 
                 audio_file = request.files['audio']
                 
-                # Create a more robust temporary file handling
                 temp_audio_path = None
                 try:
-                    # Create temporary file with proper extension based on content type
-                    file_extension = '.wav'  # default
+                    file_extension = '.wav'  
                     if audio_file.content_type:
                         if 'mp3' in audio_file.content_type:
                             file_extension = '.mp3'
@@ -242,7 +205,6 @@ def register_avatar_routes(app):
                         elif 'ogg' in audio_file.content_type:
                             file_extension = '.ogg'
                     
-                    # Create temp file
                     with tempfile.NamedTemporaryFile(suffix=file_extension, delete=False) as temp_audio:
                         audio_file.save(temp_audio.name)
                         temp_audio_path = temp_audio.name
@@ -258,31 +220,25 @@ def register_avatar_routes(app):
                     return jsonify({'error': f'Audio processing failed: {str(audio_error)}'}), 400
                     
                 finally:
-                    # Clean up temp file
                     if temp_audio_path and os.path.exists(temp_audio_path):
                         try:
                             os.unlink(temp_audio_path)
                         except:
                             pass
 
-            # Validate that we got some input
             if not user_input or user_input.strip() == "":
                 return jsonify({'error': 'No valid input received'}), 400
 
-            # Get document content from file storage if available
             extracted_content = ""
             if 'user_id' in session and session.get('has_document', False):
                 doc_data = get_document_data(session['user_id'])
                 extracted_content = doc_data.get('extracted_content', '')
             
-            # Log the context being used for debugging
             print(f"Chat request with input: '{user_input}'")
             print(f"Using document context? {'Yes' if extracted_content else 'No'}")
             
-            # Get user ID for conversation history
             user_id = session.get('user_id')
             
-            # Get Gemini response with document context and conversation history
             response_text = get_gemini_response(user_input, extracted_content, user_id)
 
             return jsonify({
